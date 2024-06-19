@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Notificações</title>
+</head>
+
+<body>
+
+    <script>
+        const TipoNotificacao = {
+            Sucesso: "Sucesso",
+            Aviso: "Aviso"
+        }
+
+        class Sistema {
+            #nome;
+            #usuarios;
+
+            constructor(nome) {
+                this.#nome = nome;
+                this.#usuarios = [];
+            }
+
+            adicionarUsuario(usuario) {
+                this.#usuarios.push(usuario);
+            }
+
+            mostrarUsuarios() {
+                this.#usuarios.forEach(usuario => {
+                    usuario.imprimirInfo();
+                });
+            }
+
+            removerUsuariosInativos() {
+                const umMinutoAtras = new Date(Date.now() - 60000);
+                console.log(`Removendo usuários inativos desde ${umMinutoAtras}`);
+
+                const contagemInicial = this.#usuarios.length;
+
+                this.#usuarios = this.#usuarios.filter(usuario => {
+                    const dataUltimaAtividade = new Date(usuario.getUltimaAtividade());
+                    return dataUltimaAtividade > umMinutoAtras;
+                });
+
+                const contagemRemovidos = contagemInicial - this.#usuarios.length;
+                console.log(`Removidos ${contagemRemovidos} usuários inativos.`);
+            }
+
+            notificarTodosUsuarios(mensagem, tipoMensagem) {
+                this.#usuarios.forEach(usuario => {
+                    usuario.getNotificacoes().adicionarNotificacao(mensagem, tipoMensagem, this.#nome);
+                    usuario.getNotificacoes().mostrarNotificacoes();
+                });
+            }
+        }
+
+        class Usuario {
+            #id;
+            #nome;
+            #email;
+            #cpf;
+            #login;
+            #password;
+            #notificacoes;
+            #ultimaAtividade;
+
+            constructor(nome, email, cpf, login) {
+                this.#id = this.gerarId();
+                this.#nome = nome;
+                this.#email = email;
+                this.#cpf = cpf;
+                this.#login = login;
+                this.#password = this.gerarSenha();
+                this.#notificacoes = new Notificacoes();
+                this.#ultimaAtividade = new Date().toISOString();
+            }
+
+            gerarId() {
+                const min = 1000;
+                const max = 10000;
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            gerarSenha() {
+                return Math.random().toString(36).slice(-8);
+            }
+
+            getId() {
+                return this.#id;
+            }
+
+            getNome() {
+                return this.#nome;
+            }
+
+            getUltimaAtividade() {
+                return this.#ultimaAtividade;
+            }
+
+            atualizarAtividade() {
+                this.#ultimaAtividade = new Date().toISOString();
+            }
+
+            getNotificacoes() {
+                return this.#notificacoes;
+            }
+
+            imprimirInfo() {
+                console.log(`ID: ${this.getId()}, Nome: ${this.#nome}, Email: ${this.#email}, CPF: ${this.#cpf}`);
+            }
+        }
+
+        class Notificacoes {
+            #notificacoes;
+
+            constructor() {
+                this.#notificacoes = [];
+            }
+
+            adicionarNotificacao(mensagem, tipoMensagem, nomeSistema) {
+                this.#notificacoes.push(new Notificacao(mensagem, tipoMensagem, nomeSistema));
+            }
+
+            mostrarNotificacoes() {
+                this.#notificacoes.forEach(notificacao => {
+                    if (!notificacao.foiLida()) {
+                        notificacao.imprimir();
+                        notificacao.marcarComoLida();
+                    }
+                });
+            }
+        }
+
+        class Notificacao {
+            #mensagem;
+            #tipoMensagem;
+            #foiLida;
+            #notificadaEm;
+            #notificadaPor;
+
+            constructor(mensagem, tipoMensagem, notificadaPor) {
+                this.#mensagem = mensagem;
+                this.#tipoMensagem = tipoMensagem;
+                this.#foiLida = false;
+                this.#notificadaEm = new Date().toISOString();
+                this.#notificadaPor = notificadaPor;
+            }
+
+            imprimir() {
+                console.log(`${this.#tipoMensagem}: ${this.#mensagem} - Notificado por ${this.#notificadaPor} em ${this.#notificadaEm}`);
+            }
+
+            foiLida() {
+                return this.#foiLida;
+            }
+
+            marcarComoLida() {
+                this.#foiLida = true;
+            }
+        }
+
+        const sistema = new Sistema("Sistema de Notificações");
+
+        const usuario1 = new Usuario("Nathan Grima", "nathangrima.m1@gmail.com", "12345678901", "NathanG");
+        const usuario2 = new Usuario("JoaoS", "joao@outlook.com", "10987654321", "JoaoS");
+
+        sistema.adicionarUsuario(usuario1);
+        sistema.adicionarUsuario(usuario2);
+
+        sistema.notificarTodosUsuarios("Bem-vindo ao sistema!", TipoNotificacao.Sucesso);
+        sistema.notificarTodosUsuarios("Manutenção do sistema agendada.", TipoNotificacao.Aviso);
+
+        sistema.mostrarUsuarios();
+
+        setTimeout(() => {
+            usuario1.atualizarAtividade();
+            console.log('Atividade de Nathan Grima atualizada');
+        }, 30000); 
+
+        setTimeout(() => {
+            sistema.removerUsuariosInativos();
+            sistema.mostrarUsuarios();
+        }, 65000);
+
+    </script>
+</body>
+
+</html>
